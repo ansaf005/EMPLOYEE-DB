@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply transition-colors duration-200;
+  }
+}
+
+/* Custom Grayscale Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-neutral-200 dark:bg-neutral-800 rounded-full hover:bg-neutral-400 dark:hover:bg-neutral-600 transition-colors;
+}
+
+/* Custom Grayscale Slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  @apply bg-neutral-200 dark:bg-neutral-800 h-1 rounded-full;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  @apply bg-black dark:bg-white w-3.5 h-3.5 rounded-full border border-white dark:border-black -mt-1.25 shadow-sm transition-transform hover:scale-110;
+}
+
+/* Grayscale Ring Loader Animation */
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+/* Premium micro-shadow class */
+.shadow-premium {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 3px -1px rgba(0, 0, 0, 0.02);
+}
+.shadow-premium-dark {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 255, 255, 0.02);
+}

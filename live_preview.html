@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmpPulse | Monochromatic React Preview</title>
+  
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Exporters CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- React & Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #e5e5e5;
+      border-radius: 99px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #262626;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+    .animate-slide-in {
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-900 dark:bg-black dark:text-slate-100 transition-colors duration-200 antialiased">
+
+  <div id="root">
+    <div class="flex items-center justify-center h-screen bg-black text-white">
+      <div class="text-center space-y-4">
+        <h2 class="text-lg font-semibold animate-pulse">Compiling Monochromatic Portal...</h2>
+        <div class="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load local environment config from .env at runtime
+    window.supabaseConfig = null;
+    window.supabaseClient = null;
+    
+    async function initSupabaseConfig() {
+      try {
+        const res = await fetch('/.env?t=' + Date.now());
+        if (!res.ok) throw new Error();
+        const text = await res.text();
+        const config = {};
+        text.split('\n').forEach(line => {
+          const parts = line.split('=');
+          if (parts.length >= 2) {
+            const key = parts[0].trim();
+            const val = parts.slice(1).join('=').trim();
+            config[key] = val;
+          }
+        });
+        const url = (config.VITE_SUPABASE_URL || config.SUPABASE_URL || 'https://nfxwhudqwezjgcisegez.supabase.co').replace(/\/rest\/v1\/?$/, '');
+        const key = config.VITE_SUPABASE_ANON_KEY || config.SUPABASE_ANON_KEY || 'sb_publishable_6kCFq7bkASiKQ9gp8r0Uww_14FHfrQY';
+        window.supabaseConfig = { url, key };
+        if (window.supabase) {
+          window.supabaseClient = window.supabase.createClient(url, key);
+        }
+      } catch (e) {
+        console.warn("Could not parse .env, using default credentials", e);
+        const url = 'https://nfxwhudqwezjgcisegez.supabase.co';
+        const key = 'sb_publishable_6kCFq7bkASiKQ9gp8r0Uww_14FHfrQY';
+        window.supabaseConfig = { url, key };
+        if (window.supabase) {
+          window.supabaseClient = window.supabase.createClient(url, key);
+        }
+      }
+    }
+    
+    // Blocking configuration load
+    window.configPromise = initSupabaseConfig();
+  </script>
+
+  <!-- React TSX Application Logic (Compiled In-Browser) -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- Mock Data Sets ---
+    const INITIAL_EMPLOYEES = [
+      { id: 'EMP-01', photo: 'AR', name: 'Alex Rivera', email: 'alex.r@company.com', phone: '+1 (555) 234-5678', emergencyContact: 'Maria Rivera (Spouse)', address: '128 Pine St, SF', dob: '1992-04-15', joiningDate: '2023-03-01', designation: 'Senior Frontend Engineer', department: 'Development', level: 'Senior', assignedProjects: ['EmpPulse Portal', 'Client CRM System'], tasksCompleted: 42, currentProgress: 88, status: 'Active', reportingManager: 'Sarah Jenkins', skills: ['React', 'TypeScript', 'TailwindCSS'], experience: '6 Years', salary: '$135,000', performanceRating: 4.8, productiveHours: 154, workingHours: 168, role: 'employee', avatar: 'AR' },
+      { id: 'EMP-02', photo: 'JC', name: 'Jessica Chen', email: 'jessica.c@company.com', phone: '+1 (555) 345-6789', emergencyContact: 'Arthur Chen (Father)', address: '452 Broadway, Oakland', dob: '1995-09-24', joiningDate: '2024-01-15', designation: 'Lead Product Designer', department: 'Design', level: 'Lead', assignedProjects: ['EmpPulse Portal', 'Brand Redesign'], tasksCompleted: 35, currentProgress: 75, status: 'Active', reportingManager: 'Sarah Jenkins', skills: ['Figma', 'UI/UX Design'], experience: '8 Years', salary: '$145,000', performanceRating: 4.9, productiveHours: 160, workingHours: 168, role: 'employee', avatar: 'JC' },
+      { id: 'EMP-03', photo: 'MV', name: 'Marcus Vance', email: 'marcus.v@company.com', phone: '+1 (555) 456-7890', emergencyContact: 'Linda Vance (Mother)', address: '988 Mission St, SF', dob: '1994-11-02', joiningDate: '2023-08-10', designation: 'Growth Marketing Manager', department: 'Marketing', level: 'Mid', assignedProjects: ['Q3 Campaign Launch'], tasksCompleted: 18, currentProgress: 60, status: 'Active', reportingManager: 'Sarah Jenkins', skills: ['SEO', 'Google Ads'], experience: '4 Years', salary: '$95,000', performanceRating: 4.2, productiveHours: 140, workingHours: 168, role: 'employee', avatar: 'MV' },
+      { id: 'EMP-04', photo: 'SP', name: 'Sophia Patel', email: 'sophia.p@company.com', phone: '+1 (555) 567-8901', emergencyContact: 'Rohan Patel (Brother)', address: '741 Clay St, SF', dob: '1991-07-30', joiningDate: '2022-05-15', designation: 'Senior Product Manager', department: 'Product', level: 'Senior', assignedProjects: ['Client CRM System'], tasksCompleted: 52, currentProgress: 95, status: 'Active', reportingManager: 'Sarah Jenkins', skills: ['Roadmaps', 'Jira'], experience: '9 Years', salary: '$150,000', performanceRating: 4.7, productiveHours: 158, workingHours: 168, role: 'employee', avatar: 'SP' },
+      { id: 'EMP-05', photo: 'DK', name: 'David Kim', email: 'david.k@company.com', phone: '+1 (555) 678-9012', emergencyContact: 'Ji-Yeon Kim', address: '254 Geary St, SF', dob: '1996-01-20', joiningDate: '2025-02-01', designation: 'Sales Executive', department: 'Sales', level: 'Junior', assignedProjects: ['Outbound Reach Campaign'], tasksCompleted: 12, currentProgress: 45, status: 'On Leave', reportingManager: 'Sarah Jenkins', skills: ['Cold Calling'], experience: '1 Year', salary: '$70,000', performanceRating: 3.8, productiveHours: 100, workingHours: 168, role: 'employee', avatar: 'DK' }
+    ];
+
+    const INITIAL_PROJECTS = [
+      { id: 'PRJ-101', name: 'EmpPulse Portal', members: ['Alex Rivera', 'Jessica Chen'], startDate: '2026-05-01', endDate: '2026-06-30', progress: 82, priority: 'High', status: 'In Progress' },
+      { id: 'PRJ-102', name: 'Client CRM System', members: ['Alex Rivera', 'Sophia Patel'], startDate: '2026-04-10', endDate: '2026-07-15', progress: 65, priority: 'Critical', status: 'In Progress' },
+      { id: 'PRJ-103', name: 'Brand Redesign', members: ['Jessica Chen'], startDate: '2026-06-01', endDate: '2026-08-31', progress: 15, priority: 'Medium', status: 'In Progress' }
+    ];
+
+    const INITIAL_TASKS = [
+      { id: 'TSK-201', name: 'Setup Vite + TypeScript Template', assignedEmployee: 'EMP-01', dueDate: '2026-06-07', priority: 'High', progress: 100, notes: 'Configure settings files.' },
+      { id: 'TSK-202', name: 'Create Monochromatic Design Tokens', assignedEmployee: 'EMP-02', dueDate: '2026-06-08', priority: 'High', progress: 90, notes: 'Design layout tokens.' },
+      { id: 'TSK-203', name: 'Establish Recharts Modules', assignedEmployee: 'EMP-01', dueDate: '2026-06-12', priority: 'Medium', progress: 40, notes: 'Configure charts.' }
+    ];
+
+    const INITIAL_NOTIFICATIONS = [
+      { id: 'not-1', text: 'Task TSK-202 deadline is today. Review final tokens file.', type: 'deadline', timestamp: '2026-06-08T09:00:00Z', read: false }
+    ];
+
+    // --- React wrapper for Lucide Icons ---
+    const LucideIcon = ({ name, size = 16, className = '' }) => {
+      const iconRef = useRef(null);
+
+      useEffect(() => {
+        if (window.lucide && iconRef.current) {
+          iconRef.current.innerHTML = '';
+          const iconNode = document.createElement('i');
+          iconNode.setAttribute('data-lucide', name);
+          if (size) {
+            iconNode.setAttribute('style', `width: ${size}px; height: ${size}px;`);
+          }
+          iconRef.current.appendChild(iconNode);
+          window.lucide.createIcons();
+        }
+      }, [name, size]);
+
+      return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`} />;
+    };
+
+    // --- Main App ---
+    const App = () => {
+      const [configLoaded, setConfigLoaded] = useState(false);
+      const [currentView, setCurrentView] = useState('dashboard');
+      const [theme, setTheme] = useState('light');
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const [mobileOpen, setMobileOpen] = useState(false);
+      const [globalSearch, setGlobalSearch] = useState('');
+
+      // Authentication State
+      const [session, setSession] = useState(null);
+      const [currentUser, setCurrentUser] = useState(null);
+      const [isOfflineMode, setIsOfflineMode] = useState(false);
+      const [authView, setAuthView] = useState('signin');
+      const [authError, setAuthError] = useState('');
+      const [authSuccess, setAuthSuccess] = useState('');
+
+      // Sign In Form
+      const [siEmail, setSiEmail] = useState('');
+      const [siPassword, setSiPassword] = useState('');
+
+      // Sign Up Form
+      const [suName, setSuName] = useState('');
+      const [suEmail, setSuEmail] = useState('');
+      const [suPassword, setSuPassword] = useState('');
+      const [suRole, setSuRole] = useState('employee');
+      const [suDepartment, setSuDepartment] = useState('Development');
+      const [suDesignation, setSuDesignation] = useState('Frontend Engineer');
+
+      // Forgot Password Form
+      const [forgotEmail, setForgotEmail] = useState('');
+
+      // Data States
+      const [employees, setEmployees] = useState([]);
+      const [projects, setProjects] = useState([]);
+      const [tasks, setTasks] = useState([]);
+      const [notifications, setNotifications] = useState([]);
+
+      useEffect(() => {
+        window.configPromise.then(() => {
+          setConfigLoaded(true);
+          
+          // Load local offline settings
+          const savedOffline = localStorage.getItem('emp_react_offline');
+          if (savedOffline === 'true') {
+            setIsOfflineMode(true);
+            const savedUser = localStorage.getItem('emp_react_current_user');
+            if (savedUser) setCurrentUser(JSON.parse(savedUser));
+          } else {
+            // Supabase auth subscription listener
+            const client = window.supabaseClient;
+            if (client) {
+              client.auth.getSession().then(({ data: { session: activeSession } }) => {
+                setSession(activeSession);
+                if (activeSession) fetchUserProfile(activeSession.user.id);
+              });
+              client.auth.onAuthStateChange((_event, activeSession) => {
+                setSession(activeSession);
+                if (activeSession) {
+                  fetchUserProfile(activeSession.user.id);
+                } else {
+                  setCurrentUser(null);
+                }
+              });
+            }
+          }
+        });
+      }, []);
+
+      const fetchUserProfile = async (userId) => {
+        const client = window.supabaseClient;
+        if (!client) return;
+        try {
+          const { data, error } = await client.from('profiles').select('*').eq('id', userId).single();
+          if (error) throw error;
+          if (data) {
+            setCurrentUser(data);
+          }
+        } catch (err) {
+          console.warn("Profile fetch error, auto-provisioning...", err);
+          // Auto-provision profile from auth metadata
+          const mockUser = INITIAL_EMPLOYEES.find(e => e.email.toLowerCase() === session?.user?.email?.toLowerCase());
+          const newProfile = {
+            id: userId,
+            name: mockUser?.name || 'Administrator',
+            email: session?.user?.email || 'admin@company.com',
+            role: (session?.user?.email?.toLowerCase().includes('sarah') || session?.user?.email?.toLowerCase().includes('admin')) ? 'manager' : 'employee',
+            department: mockUser?.department || 'Operations',
+            designation: mockUser?.designation || 'Director',
+            status: 'active',
+            avatar: mockUser?.photo || 'AD'
+          };
+          await client.from('profiles').insert(newProfile);
+          setCurrentUser(newProfile);
+        }
+      };
+
+      // Load Data depending on offline or online state
+      useEffect(() => {
+        if (!configLoaded) return;
+
+        if (isOfflineMode) {
+          const savedEmployees = localStorage.getItem('emp_react_employees');
+          const savedProjects = localStorage.getItem('emp_react_projects');
+          const savedTasks = localStorage.getItem('emp_react_tasks');
+          const savedNotifs = localStorage.getItem('emp_react_notifications');
+
+          setEmployees(savedEmployees ? JSON.parse(savedEmployees) : INITIAL_EMPLOYEES);
+          setProjects(savedProjects ? JSON.parse(savedProjects) : INITIAL_PROJECTS);
+          setTasks(savedTasks ? JSON.parse(savedTasks) : INITIAL_TASKS);
+          setNotifications(savedNotifs ? JSON.parse(savedNotifs) : INITIAL_NOTIFICATIONS);
+        } else if (currentUser) {
+          loadSupabaseData();
+        }
+      }, [currentUser, isOfflineMode, configLoaded]);
+
+      const loadSupabaseData = async () => {
+        const client = window.supabaseClient;
+        if (!client) return;
+        try {
+          // 1. Fetch profiles
+          const { data: dbProfiles } = await client.from('profiles').select('*');
+          if (dbProfiles) {
+            setEmployees(dbProfiles.map(e => ({
+              id: e.id,
+              photo: e.avatar || 'EE',
+              name: e.name,
+              email: e.email,
+              phone: '+1 (555) 234-5678',
+              emergencyContact: 'Maria Rivera (Spouse)',
+              address: '128 Pine St, SF',
+              dob: '1992-04-15',
+              joiningDate: '2023-03-01',
+              designation: e.designation || 'Software Engineer',
+              department: e.department || 'Development',
+              level: (e.role === 'manager' ? 'Lead' : 'Mid'),
+              assignedProjects: [],
+              tasksCompleted: 12,
+              currentProgress: 60,
+              status: (e.status === 'active' ? 'Active' : 'Inactive'),
+              reportingManager: 'Sarah Jenkins',
+              skills: [],
+              experience: '5 Years',
+              salary: '$90,000',
+              performanceRating: 4.5,
+              productiveHours: 150,
+              workingHours: 168,
+              timeline: []
+            })));
+          }
+
+          // 2. Fetch tasks
+          let taskQuery = client.from('tasks').select('*');
+          if (currentUser.role === 'employee') {
+            taskQuery = taskQuery.eq('assigned_to', currentUser.id);
+          }
+          const { data: dbTasks } = await taskQuery;
+          if (dbTasks) {
+            setTasks(dbTasks.map(t => ({
+              id: t.id,
+              name: t.title,
+              assignedEmployee: t.assigned_to || '',
+              dueDate: t.deadline,
+              priority: t.priority,
+              progress: t.progress || 0,
+              notes: t.description || '',
+              attachments: []
+            })));
+          }
+
+          // 3. Projects list (local cache for simplicity)
+          const savedProjects = localStorage.getItem('emp_react_projects');
+          setProjects(savedProjects ? JSON.parse(savedProjects) : INITIAL_PROJECTS);
+
+          // 4. Notifications
+          const { data: dbNotifs } = await client
+            .from('notifications')
+            .select('*')
+            .eq('employee_id', currentUser.id)
+            .order('created_at', { ascending: false });
+          if (dbNotifs) {
+            setNotifications(dbNotifs.map(n => ({
+              id: n.id,
+              text: n.text,
+              type: 'project',
+              timestamp: n.created_at,
+              read: n.read
+            })));
+          }
+        } catch (err) {
+          console.error("Failed to fetch Supabase data:", err);
+        }
+      };
+
+      // Save locally if in offline sandbox mode
+      useEffect(() => {
+        if (isOfflineMode && configLoaded) {
+          if (employees.length) localStorage.setItem('emp_react_employees', JSON.stringify(employees));
+          if (projects.length) localStorage.setItem('emp_react_projects', JSON.stringify(projects));
+          if (tasks.length) localStorage.setItem('emp_react_tasks', JSON.stringify(tasks));
+          if (notifications.length) localStorage.setItem('emp_react_notifications', JSON.stringify(notifications));
+        }
+      }, [employees, projects, tasks, notifications, isOfflineMode, configLoaded]);
+
+      const handleThemeToggle = () => {
+        const next = theme === 'light' ? 'dark' : 'light';
+        setTheme(next);
+        document.documentElement.className = next;
+      };
+
+      const handleMarkRead = (id) => {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      };
+
+      const handleClear = () => setNotifications([]);
+
+      const handleReset = () => {
+        if (confirm("Reset local cache defaults?")) {
+          setEmployees(INITIAL_EMPLOYEES);
+          setProjects(INITIAL_PROJECTS);
+          setTasks(INITIAL_TASKS);
+          setNotifications(INITIAL_NOTIFICATIONS);
+          setCurrentView('dashboard');
+        }
+      };
+
+      // --- Authentication logic ---
+      const handleSignIn = async (e) => {
+        e.preventDefault();
+        setAuthError('');
+        setAuthSuccess('');
+        const client = window.supabaseClient;
+        if (!client) return;
+
+        try {
+          const { error } = await client.auth.signInWithPassword({
+            email: siEmail,
+            password: siPassword
+          });
+          if (error) throw error;
+        } catch (err) {
+          setAuthError(err.message || "Invalid credentials.");
+        }
+      };
+
+      const handleSignUp = async (e) => {
+        e.preventDefault();
+        setAuthError('');
+        setAuthSuccess('');
+        const client = window.supabaseClient;
+        if (!client) return;
+
+        try {
+          const { error } = await client.auth.signUp({
+            email: suEmail,
+            password: suPassword,
+            options: {
+              data: {
+                name: suName,
+                role: suRole,
+                department: suDepartment,
+                designation: suDesignation
+              }
+            }
+          });
+          if (error) throw error;
+          setAuthSuccess("Registration successful! Please login.");
+          setAuthView('signin');
+          setSiEmail(suEmail);
+          setSiPassword('');
+        } catch (err) {
+          setAuthError(err.message || "Sign up failed.");
+        }
+      };
+
+      const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setAuthError('');
+        setAuthSuccess('');
+        const client = window.supabaseClient;
+        if (!client) return;
+
+        try {
+          const { error } = await client.auth.resetPasswordForEmail(forgotEmail, {
+            redirectTo: window.location.origin
+          });
+          if (error) throw error;
+          setAuthSuccess("Password reset email sent.");
+        } catch (err) {
+          setAuthError(err.message || "Reset failed.");
+        }
+      };
+
+      const handleQuickLogin = async (role) => {
+        setAuthError('');
+        setAuthSuccess('');
+        const targetEmail = role === 'manager' ? 'sarah.j@company.com' : 'alex.r@company.com';
+        const targetPassword = 'password123';
+
+        if (isOfflineMode) {
+          const mockUser = INITIAL_EMPLOYEES.find(e => e.email === targetEmail) || {
+            id: 'EMP-01',
+            name: 'Sarah Jenkins',
+            email: targetEmail,
+            role: 'manager',
+            department: 'Operations',
+            designation: 'Director',
+            avatar: 'SJ'
+          };
+          const userLocalObj = {
+            id: mockUser.id,
+            name: mockUser.name,
+            email: mockUser.email,
+            role: role,
+            department: mockUser.department,
+            designation: mockUser.designation,
+            avatar: mockUser.photo || 'SJ'
+          };
+          setCurrentUser(userLocalObj);
+          localStorage.setItem('emp_react_current_user', JSON.stringify(userLocalObj));
+        } else {
+          const client = window.supabaseClient;
+          if (!client) return;
+
+          try {
+            const { error } = await client.auth.signInWithPassword({
+              email: targetEmail,
+              password: targetPassword
+            });
+
+            if (error) {
+              if (error.message.includes("Invalid login credentials")) {
+                // Register quick user first
+                const { error: signUpErr } = await client.auth.signUp({
+                  email: targetEmail,
+                  password: targetPassword,
+                  options: {
+                    data: {
+                      name: role === 'manager' ? 'Sarah Jenkins' : 'Alex Rivera',
+                      role: role,
+                      department: role === 'manager' ? 'Operations' : 'Development',
+                      designation: role === 'manager' ? 'Operations Director' : 'Senior Frontend Engineer'
+                    }
+                  }
+                });
+                if (signUpErr) throw signUpErr;
+
+                // Sign in
+                const { error: signin2 } = await client.auth.signInWithPassword({
+                  email: targetEmail,
+                  password: targetPassword
+                });
+                if (signin2) throw signin2;
+              } else {
+                throw error;
+              }
+            }
+          } catch (err) {
+            setAuthError(`Quick login failed: ${err.message}`);
+          }
+        }
+      };
+
+      const handleLogout = async () => {
+        if (isOfflineMode) {
+          setCurrentUser(null);
+          localStorage.removeItem('emp_react_current_user');
+        } else {
+          const client = window.supabaseClient;
+          if (client) await client.auth.signOut();
+          setCurrentUser(null);
+          setSession(null);
+        }
+        setCurrentView('dashboard');
+      };
+
+      const handleToggleOfflineMode = () => {
+        const next = !isOfflineMode;
+        setIsOfflineMode(next);
+        localStorage.setItem('emp_react_offline', next ? 'true' : 'false');
+        setCurrentUser(null);
+        setSession(null);
+        setAuthError('');
+        setAuthSuccess('');
+      };
+
+      // --- Screen Render Routing ---
+      if (!currentUser) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-white text-slate-900 dark:bg-black dark:text-slate-100 transition-colors duration-200 px-4 py-12 select-none">
+            <div className="w-full max-w-md bg-white border border-neutral-100 dark:bg-neutral-950 dark:border-neutral-900 rounded-3xl p-8 shadow-soft space-y-6">
+              
+              <div className="text-center space-y-1">
+                <div className="w-10 h-10 rounded-xl bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold font-heading text-xl mx-auto shadow-sm">E</div>
+                <h1 className="font-heading font-extrabold text-xl tracking-tight pt-2">EmpPulse</h1>
+                <p className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+                  {isOfflineMode ? 'Offline Sandbox Mode' : 'Supabase Cloud HRMS'}
+                </p>
+              </div>
+
+              {authError && <div className="p-3.5 bg-neutral-50 dark:bg-neutral-900 text-[10px] border border-neutral-100 dark:border-neutral-800 rounded-xl font-medium">{authError}</div>}
+              {authSuccess && <div className="p-3.5 bg-neutral-50 dark:bg-neutral-900 text-[10px] border border-neutral-100 dark:border-neutral-800 rounded-xl font-medium">{authSuccess}</div>}
+
+              {authView === 'signin' && (
+                <form onSubmit={handleSignIn} className="space-y-4 text-xs">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Email Address</label>
+                    <input type="email" value={siEmail} onChange={e => setSiEmail(e.target.value)} required placeholder="name@company.com" className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2.5 focus:outline-none focus:border-black dark:focus:border-white text-black dark:text-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Password</label>
+                      <button type="button" onClick={() => setAuthView('forgot')} className="text-[10px] text-neutral-400 hover:text-black dark:hover:text-white font-medium">Forgot?</button>
+                    </div>
+                    <input type="password" value={siPassword} onChange={e => setSiPassword(e.target.value)} required placeholder="••••••••" className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2.5 focus:outline-none focus:border-black dark:focus:border-white text-black dark:text-white" />
+                  </div>
+                  {!isOfflineMode && <button type="submit" className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all">Sign In</button>}
+                  <div className="text-center pt-1">
+                    <span className="text-[10px] text-neutral-400">New employee? </span>
+                    <button type="button" onClick={() => setAuthView('signup')} className="text-[10px] font-bold text-neutral-950 dark:text-white hover:underline">Sign Up</button>
+                  </div>
+                </form>
+              )}
+
+              {authView === 'signup' && (
+                <form onSubmit={handleSignUp} className="space-y-4 text-xs">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Full Name</label>
+                    <input type="text" value={suName} onChange={e => setSuName(e.target.value)} required placeholder="Alex Rivera" className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2.5 focus:outline-none text-black dark:text-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Email Address</label>
+                    <input type="email" value={suEmail} onChange={e => setSuEmail(e.target.value)} required placeholder="alex.r@company.com" className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2.5 focus:outline-none text-black dark:text-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Password</label>
+                    <input type="password" value={suPassword} onChange={e => setSuPassword(e.target.value)} required placeholder="Min 6 characters" className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2.5 focus:outline-none text-black dark:text-white" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">System Role</label>
+                      <select value={suRole} onChange={e => setSuRole(e.target.value)} className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 focus:outline-none text-black dark:text-white">
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Department</label>
+                      <select value={suDepartment} onChange={e => setSuDepartment(e.target.value)} className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 focus:outline-none">
+                        <option value="Development">Development</option>
+                        <option value="Design">Design</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Operations">Operations</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Designation</label>
+                    <input type="text" value={suDesignation} onChange={e => setSuDesignation(e.target.value)} required placeholder="Senior Engineer" className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2.5 focus:outline-none" />
+                  </div>
+                  <button type="submit" className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all">Sign Up</button>
+                  <div className="text-center pt-1">
+                    <span className="text-[10px] text-neutral-400">Already registered? </span>
+                    <button type="button" onClick={() => setAuthView('signin')} className="text-[10px] font-bold text-neutral-950 dark:text-white hover:underline">Sign In</button>
+                  </div>
+                </form>
+              )}
+
+              {authView === 'forgot' && (
+                <form onSubmit={handleForgotPassword} className="space-y-4 text-xs">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400">Email Address</label>
+                    <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required placeholder="name@company.com" className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2.5 focus:outline-none text-black dark:text-white" />
+                  </div>
+                  <button type="submit" className="w-full py-2.5 bg-black text-white dark:bg-white dark:text-black font-semibold rounded-xl hover:opacity-90 transition-all">Reset Password</button>
+                  <div className="text-center pt-1">
+                    <button type="button" onClick={() => setAuthView('signin')} className="text-[10px] font-bold text-neutral-400 hover:text-black dark:hover:text-white">Back to Sign In</button>
+                  </div>
+                </form>
+              )}
+
+              <div className="border-t border-neutral-50 dark:border-neutral-900/50 pt-5 space-y-3">
+                <div className="text-center text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Quick Login For Review</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button type="button" onClick={() => handleQuickLogin('manager')} className="p-3 border border-neutral-100 dark:border-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-2xl text-center">
+                    <p className="font-bold text-neutral-950 dark:text-white">Manager Portal</p>
+                    <p className="text-[9px] text-neutral-400 mt-0.5">Sarah Jenkins</p>
+                  </button>
+                  <button type="button" onClick={() => handleQuickLogin('employee')} className="p-3 border border-neutral-100 dark:border-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-2xl text-center">
+                    <p className="font-bold text-neutral-950 dark:text-white">Employee Portal</p>
+                    <p className="text-[9px] text-neutral-400 mt-0.5">Alex Rivera</p>
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-center pt-2">
+                <button type="button" onClick={handleToggleOfflineMode} className="text-[10px] font-semibold text-neutral-400 hover:text-neutral-900 dark:hover:text-white">
+                  {isOfflineMode ? 'Switch to Supabase Cloud Mode' : 'Switch to Local Sandbox Mode'}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      }
+
+      const isManager = currentUser.role === 'manager';
+
+      // Sidebar view filter
+      const sidebarItems = isManager ? [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
+        { id: 'employees', label: 'Employees', icon: 'users' },
+        { id: 'tasks', label: 'Tasks & Projects', icon: 'check-square' },
+        { id: 'progress', label: 'Progress Tracking', icon: 'trending-up' },
+        { id: 'analytics', label: 'Performance Analytics', icon: 'award' },
+        { id: 'departments', label: 'Departments', icon: 'building-2' },
+        { id: 'reports', label: 'Reports', icon: 'file-text' },
+        { id: 'settings', label: 'Settings', icon: 'settings' }
+      ] : [
+        { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
+        { id: 'tasks', label: 'My Tasks', icon: 'check-square' },
+        { id: 'timecard', label: 'Time Clock', icon: 'clock' },
+        { id: 'settings', label: 'Settings', icon: 'settings' }
+      ];
+
+      return (
+        <div className="min-h-screen bg-white text-slate-900 dark:bg-black dark:text-slate-100 flex transition-colors duration-200">
+          {/* Sidebar */}
+          <aside className={`fixed top-0 bottom-0 left-0 bg-white border-r border-neutral-100 dark:bg-black dark:border-neutral-800 transition-all duration-300 z-50 flex flex-col justify-between ${isCollapsed ? 'w-16' : 'w-64'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <div>
+              <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-100 dark:border-neutral-800">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="w-8 h-8 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center font-bold font-heading text-lg shrink-0">E</div>
+                  {!isCollapsed && <span className="font-heading font-bold text-lg tracking-tight select-none">EmpPulse</span>}
+                </div>
+              </div>
+              <nav className="p-3 space-y-1">
+                {sidebarItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setCurrentView(item.id); setMobileOpen(false); }}
+                    className={`w-full flex items-center gap-3 py-2 px-3 rounded-xl transition-all ${currentView === item.id ? 'bg-neutral-100 text-black dark:bg-neutral-900 dark:text-white font-medium' : 'text-neutral-500 hover:text-black hover:bg-neutral-50 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-900/50'}`}
+                  >
+                    <LucideIcon name={item.icon} size={16} />
+                    {!isCollapsed && <span className="text-xs tracking-tight">{item.label}</span>}
+                  </button>
+                ))}
+              </nav>
+            </div>
+            
+            <div className="p-3 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center gap-3 py-2 px-2 border-b pb-2">
+                <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center font-bold text-xs shrink-0 border border-neutral-200 dark:border-neutral-800">
+                  {currentUser.avatar || currentUser.name[0]}
+                </div>
+                {!isCollapsed && <div className="flex-1 min-w-0"><p className="text-xs font-semibold truncate">{currentUser.name}</p><p className="text-[10px] text-neutral-400 truncate">{currentUser.email}</p></div>}
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 py-2 px-2 mt-2 rounded-xl text-neutral-400 hover:text-black dark:hover:text-white text-xs font-medium"
+              >
+                <LucideIcon name="log-out" size={14} />
+                {!isCollapsed && <span>Logout</span>}
+              </button>
+            </div>
+          </aside>
+
+          {/* Main Container */}
+          <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
+            <header className="h-16 border-b border-neutral-100 dark:border-neutral-800 bg-white/70 dark:bg-black/70 backdrop-blur-md sticky top-0 z-40 px-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setMobileOpen(true)} className="lg:hidden p-1.5 border border-neutral-100 dark:border-neutral-800 rounded-lg text-neutral-500"><LucideIcon name="menu" size={16} /></button>
+                <h1 className="font-heading font-bold text-base md:text-lg tracking-tight select-none">
+                  {currentView.toUpperCase()}
+                </h1>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <div className="relative hidden md:block w-48">
+                  <LucideIcon name="search" size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input type="text" placeholder="Search..." onChange={e => setGlobalSearch(e.target.value)} className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-full py-1.5 pl-8 pr-4 text-[10px] focus:outline-none focus:border-black dark:focus:border-white text-black dark:text-white" />
+                </div>
+                <button onClick={handleThemeToggle} className="p-2 border border-neutral-100 dark:border-neutral-800 rounded-xl text-neutral-400"><LucideIcon name={theme === 'dark' ? 'sun' : 'moon'} size={14} /></button>
+              </div>
+            </header>
+
+            <main className="p-4 md:p-6 max-w-7xl mx-auto w-full flex-1">
+              {currentView === 'dashboard' && <DashboardView employees={employees} projects={projects} tasks={tasks} currentUser={currentUser} />}
+              {currentView === 'employees' && <EmployeesView employees={employees} setEmployees={setEmployees} search={globalSearch} isManager={isManager} />}
+              {currentView === 'tasks' && <TasksView employees={employees} projects={projects} setProjects={setProjects} tasks={tasks} setTasks={setTasks} search={globalSearch} currentUser={currentUser} isOfflineMode={isOfflineMode} />}
+              {currentView === 'progress' && <ProgressView employees={employees} tasks={tasks} />}
+              {currentView === 'analytics' && <AnalyticsView employees={employees} />}
+              {currentView === 'departments' && <DepartmentsView employees={employees} tasks={tasks} />}
+              {currentView === 'reports' && <ReportsView employees={employees} projects={projects} tasks={tasks} />}
+              {currentView === 'timecard' && <TimecardView currentUser={currentUser} isOfflineMode={isOfflineMode} />}
+              {currentView === 'settings' && <SettingsView employees={employees} onReset={handleReset} isOfflineMode={isOfflineMode} />}
+            </main>
+          </div>
+        </div>
+      );
+    };
+
+    // --- Sub-View: Dashboard ---
+    const DashboardView = ({ employees, projects, tasks, currentUser }) => {
+      const isManager = currentUser.role === 'manager';
+      
+      if (isManager) {
+        const activeProjects = projects.filter(p => p.status === 'In Progress').length;
+        const completedTasks = tasks.filter(t => t.progress === 100).length;
+        const totalProgress = employees.reduce((sum, e) => sum + e.currentProgress, 0) / (employees.length || 1);
+
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Employees', val: employees.length, sub: 'All Departments', icon: 'users' },
+                { label: 'Active Projects', val: activeProjects, sub: 'In progress scopes', icon: 'briefcase' },
+                { label: 'Completed Tasks', val: completedTasks, sub: 'Delivered tasks', icon: 'check-circle' },
+                { label: 'Growth Index', val: `${Math.round(totalProgress)}%`, sub: 'Average progress score', icon: 'trending-up' }
+              ].map((k, i) => (
+                <div key={i} className="bg-white border border-neutral-100 p-5 rounded-2xl shadow-soft dark:bg-neutral-950 dark:border-neutral-900">
+                  <div className="flex justify-between text-[10px] uppercase font-bold text-neutral-400">
+                    <span>{k.label}</span>
+                    <LucideIcon name={k.icon} size={14} />
+                  </div>
+                  <div className="mt-3">
+                    <span className="text-2xl font-bold font-heading">{k.val}</span>
+                    <span className="text-[10px] text-neutral-400 block mt-0.5">{k.sub}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 dark:bg-neutral-950 dark:border-neutral-900 space-y-3">
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-400">Productivity Index</h3>
+                <div className="h-48 w-full flex items-end justify-between px-2 pt-4 border-b border-neutral-100 dark:border-neutral-800">
+                  {[65, 78, 82, 75, 92, 85].map((val, idx) => (
+                    <div key={idx} className="flex flex-col items-center flex-1 space-y-2 group">
+                      <span className="text-[8px] opacity-0 group-hover:opacity-100 transition-opacity font-bold">{val}%</span>
+                      <div className="w-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-t-full group-hover:bg-neutral-800 dark:group-hover:bg-white transition-colors" style={{ height: `${val * 1.2}px` }}></div>
+                      <span className="text-[9px] text-neutral-400">M{idx+1}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 dark:bg-neutral-950 dark:border-neutral-900 space-y-3">
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-400">Teammate Output Allocation</h3>
+                <div className="space-y-3 pt-2">
+                  {employees.slice(0, 4).map((emp, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-neutral-600 dark:text-neutral-400">{emp.name}</span>
+                      <div className="flex-1 mx-4 h-1 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-black dark:bg-white rounded-full" style={{ width: `${emp.currentProgress}%` }}></div>
+                      </div>
+                      <span className="font-bold">{emp.currentProgress}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      } else {
+        // Employee Dashboard
+        const myTasks = tasks.filter(t => t.assignedEmployee === currentUser.id);
+        const myCompleted = myTasks.filter(t => t.progress === 100).length;
+        const myPending = myTasks.filter(t => t.progress < 100).length;
+        const myAvgProgress = myTasks.reduce((sum, t) => sum + t.progress, 0) / (myTasks.length || 1);
+
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'My Assigned Tasks', val: myTasks.length, sub: 'Total assigned scopes', icon: 'briefcase' },
+                { label: 'My Pending Tasks', val: myPending, sub: 'In progress or review', icon: 'clock' },
+                { label: 'My Completed Tasks', val: myCompleted, sub: 'Delivered successfully', icon: 'check-circle' },
+                { label: 'My Performance Index', val: `${Math.round(myAvgProgress)}%`, sub: 'Average task progress', icon: 'trending-up' }
+              ].map((k, i) => (
+                <div key={i} className="bg-white border border-neutral-100 p-5 rounded-2xl shadow-soft dark:bg-neutral-950 dark:border-neutral-900">
+                  <div className="flex justify-between text-[10px] uppercase font-bold text-neutral-400">
+                    <span>{k.label}</span>
+                    <LucideIcon name={k.icon} size={14} />
+                  </div>
+                  <div className="mt-3">
+                    <span className="text-2xl font-bold font-heading">{k.val}</span>
+                    <span className="text-[10px] text-neutral-400 block mt-0.5">{k.sub}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 dark:bg-neutral-950 dark:border-neutral-900 space-y-3">
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-400">My Productivity Trend</h3>
+                <div className="h-48 w-full flex items-end justify-between px-2 pt-4 border-b border-neutral-100 dark:border-neutral-800">
+                  {[72, 85, 80, 95].map((val, idx) => (
+                    <div key={idx} className="flex flex-col items-center flex-1 space-y-2 group">
+                      <span className="text-[8px] opacity-0 group-hover:opacity-100 transition-opacity font-bold">{val}%</span>
+                      <div className="w-2 bg-neutral-200 dark:bg-neutral-800 rounded-t-full group-hover:bg-neutral-800 dark:group-hover:bg-white transition-colors" style={{ height: `${val * 1.2}px` }}></div>
+                      <span className="text-[9px] text-neutral-400">Wk {idx+1}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border border-neutral-100 rounded-2xl p-5 dark:bg-neutral-950 dark:border-neutral-900 space-y-3 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-400">Personal Insights</h3>
+                  <div className="mt-4 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 space-y-2 text-xs">
+                    <p className="font-semibold text-neutral-900 dark:text-white">High Output Ratio</p>
+                    <p className="text-neutral-400 leading-relaxed text-[11px]">You completed {myCompleted} tasks successfully. Try updating your current pending tasks progress before deadlines to maintain your target productivity rating.</p>
+                  </div>
+                </div>
+                <div className="text-[10px] text-neutral-400 text-right italic pt-2">Calculated in real-time</div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    };
+
+    // --- Sub-View: Employees Directory ---
+    const EmployeesView = ({ employees, setEmployees, search, isManager }) => {
+      const [selected, setSelected] = useState(null);
+      const [showModal, setShowModal] = useState(false);
+      const [formName, setFormName] = useState('');
+      const [formEmail, setFormEmail] = useState('');
+      const [formDesignation, setFormDesignation] = useState('');
+
+      const filtered = employees.filter(e => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
+
+      const handleAdd = async (e) => {
+        e.preventDefault();
+        const initials = formName.split(' ').map(n=>n[0]).join('').toUpperCase();
+        const newEmp = {
+          id: `EMP-${Date.now()}`,
+          photo: initials || 'EE',
+          name: formName,
+          email: formEmail,
+          designation: formDesignation,
+          department: 'Development',
+          level: 'Mid',
+          assignedProjects: [],
+          tasksCompleted: 0,
+          currentProgress: 0,
+          status: 'Active',
+          reportingManager: 'Sarah Jenkins',
+          skills: ['React'],
+          experience: '2 Years',
+          salary: '$80,000',
+          performanceRating: 5.0,
+          productiveHours: 0,
+          workingHours: 168,
+          timeline: []
+        };
+        setEmployees(prev => [...prev, newEmp]);
+        setShowModal(false);
+        alert("Employee added to local mock database. To add to Supabase Auth, register on the Login page.");
+      };
+
+      const handleCSV = () => {
+        const rows = filtered.map(e => [e.id, e.name, e.designation, e.department, e.email, e.status]);
+        const csv = "data:text/csv;charset=utf-8,ID,Name,Designation,Department,Email,Status\n" + rows.map(r=>r.join(',')).join('\n');
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csv));
+        link.setAttribute("download", "Employees.csv");
+        link.click();
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <button onClick={handleCSV} className="text-xs border border-neutral-100 py-1.5 px-3 rounded-lg dark:border-neutral-800">CSV Export</button>
+            {isManager && <button onClick={() => { setFormName(''); setFormEmail(''); setFormDesignation(''); setShowModal(true); }} className="text-xs bg-black text-white dark:bg-white dark:text-black py-2 px-4 rounded-xl font-semibold">Add Employee</button>}
+          </div>
+
+          <div className="bg-white border border-neutral-100 rounded-2xl shadow-soft overflow-hidden dark:bg-neutral-950 dark:border-neutral-900">
+            <table className="w-full text-left border-collapse text-xs select-none">
+              <thead>
+                <tr className="bg-neutral-50/50 dark:bg-neutral-900/20 text-neutral-400 border-b border-neutral-100 dark:border-neutral-900 font-bold">
+                  <th className="p-4">Staff</th>
+                  <th className="p-4">Designation</th>
+                  <th className="p-4">Department</th>
+                  <th className="p-4">Email</th>
+                  <th className="p-4">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(emp => (
+                  <tr key={emp.id} onClick={() => setSelected(emp)} className="border-b border-neutral-50 dark:border-neutral-900/50 hover:bg-neutral-50/20 dark:hover:bg-neutral-900/10 cursor-pointer">
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center font-bold text-[9px] uppercase">{emp.photo}</div>
+                        <span className="font-semibold">{emp.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-neutral-500">{emp.designation}</td>
+                    <td className="p-4 text-neutral-500">{emp.department}</td>
+                    <td className="p-4 text-neutral-400 font-mono">{emp.email}</td>
+                    <td className="p-4"><span className="px-2 py-0.5 rounded-full border border-neutral-200 dark:border-neutral-800 text-[10px]">{emp.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Drawer slide-out */}
+          {selected && (
+            <div className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white border-l border-neutral-100 dark:bg-neutral-950 dark:border-neutral-800 p-6 z-50 flex flex-col justify-between animate-slide-in shadow-2xl">
+              <div className="space-y-6 overflow-y-auto">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-heading font-bold text-xs uppercase text-neutral-400">Staff Profile</h3>
+                  <button onClick={() => setSelected(null)} className="p-1 border border-neutral-100 dark:border-neutral-800 rounded-lg"><LucideIcon name="x" size={14} /></button>
+                </div>
+                <div className="flex items-center gap-4 border-b pb-4">
+                  <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center font-bold text-xl uppercase">{selected.photo}</div>
+                  <div>
+                    <h4 className="font-bold text-base">{selected.name}</h4>
+                    <p className="text-xs text-neutral-400">{selected.designation}</p>
+                  </div>
+                </div>
+                <div className="space-y-3 text-xs">
+                  <p className="flex justify-between"><strong>Department:</strong> <span>{selected.department}</span></p>
+                  <p className="flex justify-between"><strong>Status:</strong> <span>{selected.status}</span></p>
+                  <p className="flex justify-between"><strong>Email:</strong> <span className="font-mono">{selected.email}</span></p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Add Form Modal */}
+          {showModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="bg-white border rounded-2xl w-full max-w-sm dark:bg-neutral-950 dark:border-neutral-900 p-6 space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center pb-2 border-b">
+                  <h4 className="font-bold text-xs uppercase text-neutral-400">New Employee Profile</h4>
+                  <button onClick={() => setShowModal(false)} className="text-neutral-400"><LucideIcon name="x" size={14} /></button>
+                </div>
+                <form onSubmit={handleAdd} className="space-y-3 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-400 uppercase">Name</label>
+                    <input type="text" onChange={e => setFormName(e.target.value)} required className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 text-black dark:text-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-400 uppercase">Email</label>
+                    <input type="email" onChange={e => setFormEmail(e.target.value)} required className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 text-black dark:text-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-400 uppercase">Designation</label>
+                    <input type="text" onChange={e => setFormDesignation(e.target.value)} required className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 text-black dark:text-white" />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button type="submit" className="bg-black text-white dark:bg-white dark:text-black font-bold py-2 px-4 rounded-xl">Create Profile</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // --- Sub-View: Tasks Projects ---
+    const TasksView = ({ employees, projects, setProjects, tasks, setTasks, search, currentUser, isOfflineMode }) => {
+      const [showModal, setShowModal] = useState(false);
+      const [taskName, setTaskName] = useState('');
+      const [taskAssignee, setTaskAssignee] = useState(employees[0]?.id || '');
+      const [taskNotes, setTaskNotes] = useState('');
+      const [taskDueDate, setTaskDueDate] = useState('');
+      const [taskPriority, setTaskPriority] = useState('Medium');
+
+      const isManager = currentUser.role === 'manager';
+
+      const handleCreate = async (e) => {
+        e.preventDefault();
+        const newTaskData = {
+          title: taskName,
+          description: taskNotes,
+          assigned_to: taskAssignee,
+          assigned_by: currentUser.id,
+          priority: taskPriority,
+          deadline: taskDueDate || new Date().toISOString().split('T')[0],
+          status: 'Not Started',
+          progress: 0
+        };
+
+        if (isOfflineMode) {
+          const newTask = {
+            id: `TSK-${Math.floor(100+Math.random()*900)}`,
+            name: taskName,
+            assignedEmployee: taskAssignee,
+            dueDate: newTaskData.deadline,
+            priority: taskPriority,
+            progress: 0,
+            notes: taskNotes,
+            attachments: []
+          };
+          setTasks(prev => [newTask, ...prev]);
+          setShowModal(false);
+          alert("Task created successfully in sandbox.");
+        } else {
+          const client = window.supabaseClient;
+          if (!client) return;
+          try {
+            const { error } = await client.from('tasks').insert(newTaskData);
+            if (error) throw error;
+            alert("Task assigned successfully in Supabase!");
+            setShowModal(false);
+            // Refresh data trigger by clicking sidebar again
+            window.location.reload();
+          } catch (err) {
+            alert(`Failed: ${err.message}`);
+          }
+        }
+      };
+
+      const handleTaskProgress = async (taskItem, val) => {
+        const client = window.supabaseClient;
+        const status = val === 100 ? 'Completed' : val === 0 ? 'Not Started' : 'In Progress';
+        
+        if (isOfflineMode) {
+          setTasks(prev => prev.map(t => t.id === taskItem.id ? { ...t, progress: val } : t));
+          alert("Progress updated locally.");
+        } else if (client) {
+          try {
+            const { error } = await client.from('tasks').update({ progress: val, status }).eq('id', taskItem.id);
+            if (error) throw error;
+            alert("Progress updated in Supabase!");
+            window.location.reload();
+          } catch (err) {
+            alert(`Update failed: ${err.message}`);
+          }
+        }
+      };
+
+      const myFilteredTasks = isManager ? tasks : tasks.filter(t => t.assignedEmployee === currentUser.id);
+
+      return (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-400">Initiatives Log</h3>
+            {isManager && <button onClick={() => { setTaskName(''); setTaskNotes(''); setTaskDueDate(new Date().toISOString().split('T')[0]); setShowModal(true); }} className="text-xs bg-black text-white dark:bg-white dark:text-black py-2 px-4 rounded-xl font-semibold">Assign Task</button>}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {isManager && (
+              <div className="lg:col-span-6 space-y-3">
+                <h4 className="text-[10px] uppercase font-bold text-neutral-400">Projects</h4>
+                {projects.map(p => (
+                  <div key={p.id} className="bg-white border rounded-2xl p-4 shadow-soft dark:bg-neutral-950 dark:border-neutral-900 space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="font-bold">{p.name}</span>
+                      <span className="text-[9px] border px-2 py-0.5 rounded-full">{p.status}</span>
+                    </div>
+                    <div className="h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden">
+                      <div className="h-full bg-black dark:bg-white" style={{ width: `${p.progress}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className={`${isManager ? 'lg:col-span-6' : 'lg:col-span-12'} bg-white border rounded-2xl p-4 dark:bg-neutral-950 dark:border-neutral-900 space-y-3`}>
+              <h4 className="text-[10px] uppercase font-bold text-neutral-400 pb-2">Assigned Tasks</h4>
+              {myFilteredTasks.length === 0 ? (
+                <div className="text-center text-xs text-neutral-400 py-8">No tasks logged.</div>
+              ) : (
+                myFilteredTasks.map(t => (
+                  <div key={t.id} className="py-3.5 border-b last:border-0 dark:border-neutral-900 flex justify-between items-center text-xs gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold truncate">{t.name}</p>
+                      <p className="text-[10px] text-neutral-400 truncate">{t.notes}</p>
+                      <p className="text-[9px] text-neutral-400 font-mono mt-0.5">Due: {t.dueDate}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-bold">{t.progress}%</span>
+                      <select 
+                        value={t.progress} 
+                        onChange={(e) => handleTaskProgress(t, Number(e.target.value))} 
+                        className="bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-lg p-1.5 text-[10px] focus:outline-none"
+                      >
+                        <option value="0">0% (Not Started)</option>
+                        <option value="25">25% (In Progress)</option>
+                        <option value="50">50% (Halfway)</option>
+                        <option value="75">75% (Awaiting completion)</option>
+                        <option value="100">100% (Completed)</option>
+                      </select>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {showModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="bg-white border rounded-2xl w-full max-w-sm dark:bg-neutral-950 dark:border-neutral-900 p-6 space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center pb-2 border-b">
+                  <h4 className="font-bold text-xs uppercase text-neutral-400">Assign Task</h4>
+                  <button onClick={() => setShowModal(false)} className="text-neutral-400"><LucideIcon name="x" size={14} /></button>
+                </div>
+                <form onSubmit={handleCreate} className="space-y-3 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-400 uppercase">Task Name</label>
+                    <input type="text" onChange={e => setTaskName(e.target.value)} required className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 text-black dark:text-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-400 uppercase">Assigned Staff</label>
+                    <select onChange={e => setTaskAssignee(e.target.value)} className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 text-black dark:text-white">
+                      {employees.map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-400 uppercase">Priority</label>
+                      <select onChange={e => setTaskPriority(e.target.value)} className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2">
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-neutral-400 uppercase">Due Date</label>
+                      <input type="date" value={taskDueDate} onChange={e => setTaskDueDate(e.target.value)} className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-1.5" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-neutral-400 uppercase">Description / Scope Details</label>
+                    <textarea onChange={e => setTaskNotes(e.target.value)} className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-2 h-16" placeholder="Provide notes..." />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button type="submit" className="bg-black text-white dark:bg-white dark:text-black font-bold py-2 px-4 rounded-xl">Assign</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // --- Sub-View: Progress Track ---
+    const ProgressView = ({ employees, tasks }) => {
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+            {['Task Completion', 'Attendance', 'Productivity', 'Performance', 'Efficiency'].map((label, idx) => (
+              <div key={idx} className="bg-white border rounded-2xl p-4 shadow-soft dark:bg-neutral-950 dark:border-neutral-900">
+                <span className="text-[9px] uppercase font-bold text-neutral-400 block">{label}</span>
+                <span className="text-xl font-bold font-heading mt-2 block">{80 + idx * 4}%</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-white border rounded-2xl p-4 dark:bg-neutral-950 dark:border-neutral-900 overflow-hidden">
+            <h4 className="text-xs uppercase font-bold text-neutral-400 mb-3">Individual Goal Progress</h4>
+            <div className="space-y-3.5 text-xs">
+              {employees.map(emp => (
+                <div key={emp.id} className="flex justify-between items-center border-b pb-2 last:border-0 last:pb-0 dark:border-neutral-900">
+                  <span className="font-medium">{emp.name}</span>
+                  <div className="flex-1 mx-4 h-1.5 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden">
+                    <div className="h-full bg-black dark:bg-white" style={{ width: `${emp.currentProgress}%` }}></div>
+                  </div>
+                  <span className="font-bold">{emp.currentProgress}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- Sub-View: Performance Analytics ---
+    const AnalyticsView = ({ employees }) => {
+      const top = [...employees].sort((a,b)=> b.performanceRating - a.performanceRating);
+
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { metric: '+18% Dev Growth', title: 'Sprint Velocity Up', desc: 'Refactoring tasks completed ahead of deadlines.' },
+              { metric: '95% Ops Met', title: 'Target Milestones Hit', desc: 'Relocation logistics vendor lists completed.' },
+              { metric: '+32% Alex Task', title: 'Developer Velocity High', desc: 'High delivery output on frontend templates.' }
+            ].map((ins, i) => (
+              <div key={i} className="bg-white border rounded-2xl p-5 dark:bg-neutral-950 dark:border-neutral-900 space-y-2">
+                <span className="text-[9px] font-bold border px-2 py-0.5 rounded-lg text-neutral-400">{ins.metric}</span>
+                <h4 className="font-bold text-xs pt-1">{ins.title}</h4>
+                <p className="text-[10px] text-neutral-400 leading-relaxed">{ins.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-7 bg-white border rounded-2xl p-4 dark:bg-neutral-950 dark:border-neutral-900 space-y-3">
+              <h4 className="text-xs uppercase font-bold text-neutral-400">Leaderboard Listings</h4>
+              <div className="space-y-3 divide-y divide-neutral-50 dark:divide-neutral-900">
+                {top.map((e, idx) => (
+                  <div key={e.id} className="pt-2.5 first:pt-0 flex justify-between items-center text-xs">
+                    <span className="font-medium">{idx+1}. {e.name}</span>
+                    <span className="font-bold">{e.performanceRating || 4.5} / 5.0</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 bg-white border rounded-2xl p-4 dark:bg-neutral-950 dark:border-neutral-900 space-y-3">
+              <h4 className="text-xs uppercase font-bold text-neutral-400">Performance Warnings</h4>
+              {employees.filter(e => e.performanceRating < 4.0).map(e => (
+                <div key={e.id} className="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800 text-[10px] space-y-1">
+                  <h5 className="font-bold">{e.name} ({e.performanceRating} rating)</h5>
+                  <p className="text-neutral-400 leading-normal">Suggestion: Coordinate support on technical tickets.</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- Sub-View: Departments ---
+    const DepartmentsView = ({ employees, tasks }) => {
+      const depts = ['Development', 'Design', 'Marketing', 'Sales', 'Operations'];
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {depts.map(name => {
+            const count = employees.filter(e=>e.department === name).length;
+            return (
+              <div key={name} className="bg-white border rounded-2xl p-5 dark:bg-neutral-950 dark:border-neutral-900 space-y-3">
+                <div className="flex justify-between items-start text-xs font-bold font-heading">
+                  <span className="uppercase text-[10px] text-neutral-400">{name}</span>
+                  <span className="text-[10px] font-semibold text-neutral-400">{count} active</span>
+                </div>
+                <div className="pt-2">
+                  <div className="flex justify-between text-[9px] text-neutral-400 font-semibold mb-1">
+                    <span>Productivity Index</span>
+                    <span>85%</span>
+                  </div>
+                  <div className="h-1 bg-neutral-100 dark:bg-neutral-900 rounded-full overflow-hidden">
+                    <div className="h-full bg-black dark:bg-white" style={{ width: '85%' }}></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
+    // --- Sub-View: Reports ---
+    const ReportsView = ({ employees, projects, tasks }) => {
+      const handlePDF = () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text("EmpPulse Performance Document", 14, 25);
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
+        doc.line(14,35,196,35);
+        
+        employees.forEach((e, i) => {
+          doc.text(`${i+1}. ${e.name} - Rating: ${e.performanceRating || '4.5'}`, 16, 45 + (i * 8));
+        });
+        doc.save("Report.pdf");
+      };
+
+      return (
+        <div className="max-w-md mx-auto bg-white border border-neutral-100 rounded-2xl p-6 dark:bg-neutral-950 dark:border-neutral-900 text-center space-y-4 shadow-soft">
+          <LucideIcon name="file-text" size={48} className="mx-auto text-neutral-300 dark:text-neutral-700" />
+          <div>
+            <h3 className="font-heading font-bold text-sm">Export Performance Logs</h3>
+            <p className="text-[10px] text-neutral-400 leading-normal max-w-xs mx-auto mt-1">Generate PDF sheets of aggregate KPI indices and teammate progress scores.</p>
+          </div>
+          <button onClick={handlePDF} className="w-full bg-black text-white dark:bg-white dark:text-black py-2.5 rounded-xl text-xs font-semibold">Download report (PDF)</button>
+        </div>
+      );
+    };
+
+    // --- Sub-View: Time Clock (Employee Punch Card) ---
+    const TimecardView = ({ currentUser, isOfflineMode }) => {
+      const [clockRecord, setClockRecord] = useState(null);
+      const [logs, setLogs] = useState([]);
+      const [time, setTime] = useState('');
+      const [sessionHours, setSessionHours] = useState('0.00 hrs');
+      const [loading, setLoading] = useState(false);
+
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setTime(new Date().toTimeString().split(' ')[0]);
+        }, 1000);
+        return () => clearInterval(interval);
+      }, []);
+
+      useEffect(() => {
+        if (!clockRecord) {
+          setSessionHours('0.00 hrs');
+          return;
+        }
+        const [inH, inM, inS] = clockRecord.clock_in.split(':').map(Number);
+        const inDate = new Date();
+        inDate.setHours(inH, inM, inS);
+
+        const interval = setInterval(() => {
+          const now = new Date();
+          const diffMs = now.getTime() - inDate.getTime();
+          const hours = diffMs / (1000 * 60 * 60);
+          setSessionHours(`${hours.toFixed(2)} hrs`);
+        }, 1000);
+
+        return () => clearInterval(interval);
+      }, [clockRecord]);
+
+      const fetchLogs = async () => {
+        setLoading(true);
+        if (isOfflineMode) {
+          const localData = localStorage.getItem('emp_react_attendance');
+          const allLogs = localData ? JSON.parse(localData) : [];
+          const userLogs = allLogs.filter(l => l.employee_id === currentUser.id);
+          setLogs(userLogs);
+          const todayStr = new Date().toISOString().split('T')[0];
+          const active = userLogs.find(l => l.date === todayStr && !l.clock_out);
+          setClockRecord(active || null);
+        } else {
+          const client = window.supabaseClient;
+          if (client) {
+            const { data } = await client
+              .from('attendance')
+              .select('*')
+              .eq('employee_id', currentUser.id)
+              .order('date', { ascending: false });
+            if (data) {
+              setLogs(data);
+              const todayStr = new Date().toISOString().split('T')[0];
+              const active = data.find(l => l.date === todayStr && !l.clock_out);
+              setClockRecord(active || null);
+            }
+          }
+        }
+        setLoading(false);
+      };
+
+      useEffect(() => {
+        fetchLogs();
+      }, [currentUser.id]);
+
+      const handleClockAction = async () => {
+        setLoading(true);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+
+        if (clockRecord) {
+          // Clock out
+          const [inH, inM, inS] = clockRecord.clock_in.split(':').map(Number);
+          const inDate = new Date();
+          inDate.setHours(inH, inM, inS);
+          const diffMs = now.getTime() - inDate.getTime();
+          const hours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
+
+          if (isOfflineMode) {
+            const localData = localStorage.getItem('emp_react_attendance');
+            let allLogs = localData ? JSON.parse(localData) : [];
+            allLogs = allLogs.map(l => l.id === clockRecord.id ? { ...l, clock_out: timeStr, hours_worked: hours } : l);
+            localStorage.setItem('emp_react_attendance', JSON.stringify(allLogs));
+            alert(`Clocked out successfully. Hours worked: ${hours}`);
+            fetchLogs();
+          } else {
+            const client = window.supabaseClient;
+            if (client) {
+              await client.from('attendance').update({ clock_out: timeStr, hours_worked: hours }).eq('id', clockRecord.id);
+              alert(`Clocked out successfully. Hours worked: ${hours}`);
+              fetchLogs();
+            }
+          }
+        } else {
+          // Clock in
+          const [hours, minutes] = timeStr.split(':').map(Number);
+          const isLate = hours > 9 || (hours === 9 && minutes > 5);
+          const status = isLate ? 'Late' : 'On Time';
+
+          const newRecord = {
+            id: `att-${Date.now()}`,
+            employee_id: currentUser.id,
+            date: todayStr,
+            clock_in: timeStr,
+            clock_out: null,
+            hours_worked: 0,
+            status: status
+          };
+
+          if (isOfflineMode) {
+            const localData = localStorage.getItem('emp_react_attendance');
+            const allLogs = localData ? JSON.parse(localData) : [];
+            allLogs.push(newRecord);
+            localStorage.setItem('emp_react_attendance', JSON.stringify(allLogs));
+            alert(`Clocked in successfully (${status}).`);
+            fetchLogs();
+          } else {
+            const client = window.supabaseClient;
+            if (client) {
+              const { id, ...dbInsertData } = newRecord;
+              await client.from('attendance').insert(dbInsertData);
+              alert(`Clocked in successfully (${status}).`);
+              fetchLogs();
+            }
+          }
+        }
+        setLoading(false);
+      };
+
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-5 bg-white border border-neutral-100 dark:bg-neutral-950 dark:border-neutral-900 p-6 rounded-2xl shadow-soft text-center space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-200 dark:bg-neutral-800">
+              {clockRecord && <div className="h-full bg-black dark:bg-white animate-pulse" style={{ width: '100%' }}></div>}
+            </div>
+            
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Digital Clock</span>
+              <div className="text-3xl font-bold font-mono tracking-tight">{time || '00:00:00'}</div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center py-4">
+              <button
+                onClick={handleClockAction}
+                disabled={loading}
+                className={`w-24 h-24 rounded-full border flex flex-col items-center justify-center gap-1.5 transition-all shadow-md focus:outline-none ${clockRecord ? 'border-neutral-800 text-neutral-800 hover:bg-neutral-50 dark:border-white dark:text-white dark:hover:bg-neutral-900' : 'border-black bg-black text-white hover:bg-neutral-900 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-100'}`}
+              >
+                <LucideIcon name={clockRecord ? "square" : "play"} size={16} />
+                <span className="text-[9px] font-bold uppercase tracking-wider">{clockRecord ? 'Clock Out' : 'Clock In'}</span>
+              </button>
+            </div>
+
+            <div className="text-xs font-medium space-y-1.5 border-t border-neutral-50 dark:border-neutral-900/50 pt-4">
+              <div className="flex justify-between text-neutral-400">
+                <span>Shift Status</span>
+                <span className={`font-bold ${clockRecord ? 'text-neutral-900 dark:text-white' : 'text-neutral-400'}`}>
+                  {clockRecord ? (clockRecord.status === 'Late' ? 'Late Active' : 'Active Shift') : 'Punch Clock Out'}
+                </span>
+              </div>
+              <div className="flex justify-between text-neutral-400">
+                <span>Worked Session</span>
+                <span className="font-mono font-bold text-neutral-900 dark:text-white">{sessionHours}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-7 bg-white border border-neutral-100 dark:bg-neutral-950 dark:border-neutral-900 p-5 rounded-2xl shadow-soft space-y-4">
+            <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-neutral-400">Attendance Log History</h3>
+            <div className="overflow-x-auto text-[11px]">
+              <table className="w-full text-left border-collapse select-none">
+                <thead>
+                  <tr className="text-neutral-400 font-bold border-b border-neutral-100 dark:border-neutral-900">
+                    <th className="pb-2">Date</th>
+                    <th className="pb-2">Clock In</th>
+                    <th className="pb-2">Clock Out</th>
+                    <th className="pb-2">Worked</th>
+                    <th className="pb-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-50 dark:divide-neutral-900/40">
+                  {logs.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-neutral-400">No shift logs found.</td>
+                    </tr>
+                  ) : (
+                    logs.map(log => (
+                      <tr key={log.id} className="text-neutral-500">
+                        <td className="py-2.5 font-medium">{log.date}</td>
+                        <td className="py-2.5 font-mono">{log.clock_in}</td>
+                        <td className="py-2.5 font-mono">{log.clock_out || <span className="text-neutral-900 dark:text-white font-semibold italic">Active</span>}</td>
+                        <td className="py-2.5">{log.hours_worked ? `${log.hours_worked} hrs` : '-'}</td>
+                        <td className="py-2.5"><span className="px-2 py-0.5 rounded-full border text-[9px]">{log.status}</span></td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- Sub-View: Settings ---
+    const SettingsView = ({ employees, onReset, isOfflineMode }) => {
+      return (
+        <div className="max-w-md mx-auto space-y-4">
+          <div className="bg-white border rounded-2xl p-5 dark:bg-neutral-950 dark:border-neutral-900 space-y-2 text-xs">
+            <h4 className="text-xs uppercase font-bold text-neutral-400">Database Connection</h4>
+            <p className="text-neutral-400">Total profiles loaded: {employees.length}</p>
+            <p className="text-neutral-400">Active engine: <strong className="text-neutral-900 dark:text-white font-semibold">{isOfflineMode ? 'LocalStorage Cache' : 'Supabase Cloud REST Driver'}</strong></p>
+          </div>
+          <div className="bg-white border border-red-100 dark:border-red-950/40 rounded-2xl p-5 dark:bg-neutral-950 space-y-3">
+            <h4 className="text-xs uppercase font-bold text-red-500">Danger Zone</h4>
+            <button onClick={onReset} className="w-full border border-red-200 text-red-500 hover:bg-red-50 py-2 rounded-xl text-xs font-semibold dark:border-red-950 dark:hover:bg-red-950/20">Reset System Database</button>
+          </div>
+        </div>
+      );
+    };
+
+    // Bootstrap React App
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+  </script>
+</body>
+</html>
