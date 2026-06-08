@@ -30,6 +30,7 @@ export interface Employee {
   productiveHours: number;
   workingHours: number;
   timeline: TimelineEvent[];
+  role?: 'manager' | 'employee';
 }
 
 export interface TimelineEvent {
